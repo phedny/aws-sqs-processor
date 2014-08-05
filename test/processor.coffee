@@ -35,7 +35,7 @@ describe 'Processor', ->
                     Id: '1'
                 ]
                 Failed: []
-        processor = new Processor
+        processor = Processor
             _sqs: sqs
             queueUrl: '/queueUrl/'
             maxNumberOfMessagesProcessing: 5
