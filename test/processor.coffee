@@ -183,3 +183,12 @@ describe 'Processor', ->
             expect(sqs.changeMessageVisibilityBatch.callCount).to.be 1 * 3
             expect(sqs.changeMessageVisibilityBatch.calledWith expectedQuery).to.be true
             done()
+
+    it 'can handle the situation where no messages are returned (issue #1)', ->
+        # given
+        sqs.receiveMessage = sinon.spy()
+        processor.start()
+        # when
+        clock.tick 1000
+        # then
+        expect(-> sqs.receiveMessage.firstCall.args[1] null, {}).to.not.throwException()

@@ -50,7 +50,7 @@ class Processor extends EventEmitter
 
             # Handle the message (initiates processing)
             # statusFunctions is an array holding status functions for messages
-            statusFunctions = (@_handleMessage message for message in data.Messages)
+            statusFunctions = (@_handleMessage message for message in data.Messages || [])
             @_processing = @_processing.concat statusFunctions
 
             iValObject = setInterval =>
