@@ -120,28 +120,34 @@ class Processor extends EventEmitter
     _deleteCompletedMessages: =>
         # Determine which messages have completed
         statusFunctions = @_processing
-        deleteList = (i for f, i in statusFunctions when (status = f()) and status.completed)
-        return unless deleteList.length
+        totalDeleteList = (i for f, i in statusFunctions when (status = f()) and status.completed)
+        return unless totalDeleteList.length
 
-        @_sqs.deleteMessageBatch
-            QueueUrl: @_options.queueUrl
-            Entries: for i in deleteList
-                Id: i.toString()
-                ReceiptHandle: statusFunctions[i]().receiptHandle
-        , (err, data) =>
-            # If the request failed, emit the error
-            return @emit 'error', err if err?
+        batchIndex = 0
+        batchSize = @_options.maxNumberOfMessagesPerBatch
+        
+        while (deleteList = totalDeleteList[batchIndex...batchIndex+batchSize]).length
+            @_sqs.deleteMessageBatch
+                QueueUrl: @_options.queueUrl
+                Entries: for i in deleteList
+                    Id: i.toString()
+                    ReceiptHandle: statusFunctions[i]().receiptHandle
+            , (err, data) =>
+                # If the request failed, emit the error
+                return @emit 'error', err if err?
 
-            # Emit errors for failed updates
-            for failed in data.Failed
-                error = new Error failed.Message
-                error.failedMessage = data.Messages[i]
-                error.senderFault = failed.SenderFault
-                error.code = failed.Code
-                @emit 'error', error
+                # Emit errors for failed updates
+                for failed in data.Failed
+                    error = new Error failed.Message
+                    error.failedMessage = data.Messages[i]
+                    error.senderFault = failed.SenderFault
+                    error.code = failed.Code
+                    @emit 'error', error
 
-            # Mark messages deleted when successful
-            statusFunctions[success.Id] true for success in data.Successful
+                # Mark messages deleted when successful
+                statusFunctions[success.Id] true for success in data.Successful
+            batchIndex += batchSize
+
 
     start: =>
         return if @_running
