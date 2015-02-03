@@ -163,6 +163,46 @@ describe 'Processor', ->
             expect(sqs.deleteMessageBatch.calledWith expectedQuery).to.be true
             done()
 
+    it 'deletes no more than the batch limit allows per call', (done) ->
+        # given
+        processor.start()
+        processor.on 'message', (message, done) -> done()
+        sqs.receiveMessage = sinon.stub().callsArgWithAsync 1, null,
+                Messages: [
+                    MessageId: ':id1'
+                    ReceiptHandle: ':rpt1'
+                    Body: 'Message 1'
+                ,
+                    MessageId: ':id2'
+                    ReceiptHandle: ':rpt2'
+                    Body: 'Message 2'                
+                ,
+                    MessageId: ':id3'
+                    ReceiptHandle: ':rpt3'
+                    Body: 'Message 3'                
+                ,
+                    MessageId: ':id4'
+                    ReceiptHandle: ':rpt4'
+                    Body: 'Message 4'
+                ]
+        # when
+        clock.tick 1000
+        process.nextTick ->
+            clock.tick 2000
+            # then
+            expectedQuery2 =
+                QueueUrl: '/queueUrl/'
+                Entries: [
+                    Id: '2'
+                    ReceiptHandle: ':rpt3'
+                ,
+                    Id: '3'
+                    ReceiptHandle: ':rpt4'
+                ]
+            expect(sqs.deleteMessageBatch.callCount).to.be 4
+            expect(sqs.deleteMessageBatch.calledWith expectedQuery2).to.be true
+            done()
+
     it 'does not change visibility on deleted messages', (done) ->
         # given
         processor.start()
