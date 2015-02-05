@@ -1,6 +1,6 @@
 {
   "name": "aws-sqs-processor",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Library to assist in processing of Amazon AWS SQS queue messages",
   "author": "Mark van Cuijk <github@mark.van-cuijk.nl>",
   "license": "MIT",
